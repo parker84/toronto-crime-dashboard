@@ -1,6 +1,7 @@
 import pandas as pd
 import coloredlogs, logging
 from decouple import config
+from datetime import datetime
 from tqdm import tqdm
 logger = logging.getLogger(__name__)
 coloredlogs.install(level=config('LOG_LEVEL', 'INFO'), logger=logger)
@@ -28,6 +29,8 @@ def clean_data(in_df: pd.DataFrame):
         new_row['occurrence_day'] = eval(row['properties'])['OCC_DAY']
         new_row['occurrence_hour'] = eval(row['properties'])['OCC_HOUR']
         new_row['occurrence_dow'] = eval(row['properties'])['OCC_DOW']
+        new_row['occurence_timestamp'] = datetime.fromtimestamp(eval(row['properties'])['OCC_DATE'] / 1000) # / 1k bc ms to s
+        new_row['occurence_date'] = new_row['occurence_timestamp'].date()
         # type of crime
         new_row['offence'] = eval(row['properties'])['OFFENCE']
         new_row['mci_category'] = eval(row['properties'])['MCI_CATEGORY']
