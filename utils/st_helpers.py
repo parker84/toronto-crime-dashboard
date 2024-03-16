@@ -1,17 +1,51 @@
 import streamlit as st
 import pandas as pd
+import os
+from utils.data_cleaner import clean_data
+from utils.data_scraper import scrape_data
 import coloredlogs, logging
 from plotly import express as px
 from decouple import config
 logger = logging.getLogger('crime_in_your_neighbourhood')
 coloredlogs.install(level=config('LOG_LEVEL', 'INFO'), logger=logger)
 
+# --------------constants
+RAW_DATA_PATH = 'data/crime_data.csv'
+CLEAN_DATA_PATH = 'data/cleaned_crime_data.csv'
+
+
+def load_or_scrape_data() -> pd.DataFrame:
+    """Loads the data if it exists, otherwise scrapes and cleans the data and then returns it.
+
+    Returns:
+        pd.DataFrame: clean data
+    """
+    logger.info('Checking if cleaned data exists...')
+    if os.path.exists(CLEAN_DATA_PATH):
+        logger.info('Clean data exists.')
+        logger.info(f"Loading the data... 📁")
+        df = pd.read_csv(CLEAN_DATA_PATH)
+        logger.info(f"Data loaded. ✅ \n{df}")
+    else:
+        logger.info('Cleaned data does not exist - scraping and cleaning...')
+        df = scrape_data(write_path=RAW_DATA_PATH)
+        df = clean_data(df=df, save_path=CLEAN_DATA_PATH)
+    return df
+
+def check_if_data_is_up_to_date(df) -> bool:
+    return True # TODO: implement this
+
+def update_data(df) -> pd.DataFrame:
+    pass # TODO: implement this
 
 @st.cache_data()
 def load_data(todays_date):
     # todays_date - is here so that we can trigger the cache to refresh when the date changes
-    logger.info(f"Loading the data... 📁")
-    df = pd.read_csv('data/cleaned_crime_data.csv').rename(columns={
+    df = load_or_scrape_data()
+    data_is_up_to_date = check_if_data_is_up_to_date(df)
+    if not data_is_up_to_date:
+        df = update_data(df)
+    df = pd.read_csv(CLEAN_DATA_PATH).rename(columns={
         'mci_category': 'Crime Type',
         'offence': 'Offence',
         'occurrence_year': 'Year',
@@ -26,7 +60,6 @@ def load_data(todays_date):
         'latitude': 'Latitude',
         'longitude': 'Longitude',
     })
-    logger.info(f"Data loaded. ✅ \n{df}")
     return df
 
 @st.cache_data()
