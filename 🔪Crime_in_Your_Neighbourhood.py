@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import coloredlogs, logging
 from plotly import express as px
+from streamlit_theme import st_theme
 from PIL import Image
 from decouple import config
 logger = logging.getLogger('crime_in_your_neighbourhood')
@@ -41,7 +42,8 @@ def load_data(todays_date):
         'premises_type': 'Premises Type',
         'neighbourhood_158': 'Neighbourhood',
         'occurence_date': 'Date',
-        'occurence_timestamp': 'Date/Time',
+        'latitude': 'Latitude',
+        'longitude': 'Longitude',
     })
     logger.info(f"Data loaded. ✅ \n{df}")
     return df
@@ -168,7 +170,7 @@ with col1:
 with col2:
     group = st.selectbox(
         'Group By',
-        ['Crime Type', 'Premises Type', 'Offence', 'Location Type'],
+        ['Crime Type', 'Premises Type', 'Offence', 'Location Type', 'Hour', 'Day of Week', 'Month'],
         index=0,
     )
 
@@ -211,20 +213,21 @@ max_year = int(df_filtered['Year'].max())
 
 
 # -------------visuals
-top_5_group_values = group_values[:5]
-n_group_vals = len(top_5_group_values)
-cols = st.columns(n_group_vals)
-for i in range(n_group_vals):
-    group_val = group_values[i]
-    with cols[i]:
-        show_metric(
-            df_group[
-                df_group[group] == group_val
-            ],
-            y_col='Crimes',
-            title=group_val,
-            help=f'{group_val} Crimes for `{max_year}` in {neighbourhood}',
-        )
+if group != 'Hour':
+    top_5_group_values = group_values[:5]
+    n_group_vals = len(top_5_group_values)
+    cols = st.columns(n_group_vals)
+    for i in range(n_group_vals):
+        group_val = group_values[i]
+        with cols[i]:
+            show_metric(
+                df_group[
+                    df_group[group] == group_val
+                ],
+                y_col='Crimes',
+                title=group_val,
+                help=f'{group_val} Crimes for `{max_year}` in {neighbourhood}',
+            )
 
 plot_crimes_by_group(
     metric_df=df_group, 
@@ -235,33 +238,47 @@ plot_crimes_by_group(
 
 
 
-# TODO: geo plot
-# p = px.scatter_mapbox(
-#     df_filtered,
-#     lat='latitude',
-#     lon='longitude',
-#     color='Crime Type',
-#     hover_name='Offence',
-#     hover_data=['Location Type', 'Premises Type', 'Year', 'Month', 'Day', 'Hour', 'Day of Week', 'Neighbourhood'],
-#     zoom=10,
-#     height=600,
-# )
-# st.plotly_chart(p, use_container_width=True)
-
-
-
 df_out = df_filtered[[
-    'Date/Time', 'Crime Type', 'Offence', 'Location Type', 'Premises Type', 'Year', 'Month', 'Day', 'Hour', 'Day of Week', 'Neighbourhood'
-]].sort_values(by='Date/Time', ascending=False)
+    'Date', 'Crime Type', 'Offence', 'Location Type', 'Premises Type', 'Year', 'Month', 'Day', 'Hour', 'Day of Week', 'Neighbourhood', 'Latitude', 'Longitude'
+]].sort_values(by=['Date', 'Hour'], ascending=[False, True])
+df_out.index = range(1, df_out.shape[0]+1)
 
 st.dataframe(df_out)
 
-# TODO: show the crimes for the neighbourhood (compare against average crimes per neighbourhood - consider confounding factors like population, etc.)
+with st.spinner("Loading the map... 🗺️"):
+    if neighbourhood == 'All Neighbourhoods 🦝':
+        center = dict(lat=43.651070, lon=-79.347015)
+        zoom = 11
+    else:
+        center = dict(lat=df_out['Latitude'].mean(), lon=df_out['Longitude'].mean())
+        zoom = 13
+    p = px.scatter_mapbox(
+        df_out, 
+        lat="Latitude", 
+        lon="Longitude", 
+        zoom=zoom,
+        color=group,
+        hover_data=[
+            'Crime Type', 
+            'Offence', 
+            'Location Type', 
+            'Premises Type', 
+            'Year', 
+            'Month', 
+            'Day', 
+            'Hour', 
+            'Day of Week', 
+            'Neighbourhood'
+        ],
+        height=600,
+        width=1200,
+        center=center,
+    )
 
-# TODO: show the crimes within the neighbourhood on a map - include hover data to see more details for each
-
-# TODO: show the trends of crimes over each year / week / day / hour etc
-
-# TODO: include a table to show the lower level data per crime
-
-# TODO: then in a separate page include the ability to compare neighbourhoods
+    theme = st_theme()
+    if theme is not None:
+        if theme['base'] == 'light':
+            p.update_layout(mapbox_style="carto-positron")
+        else:
+            p.update_layout(mapbox_style="carto-darkmatter")
+        st.plotly_chart(p, use_container_width=True)
