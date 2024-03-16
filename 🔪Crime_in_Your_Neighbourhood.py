@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import coloredlogs, logging
 from plotly import express as px
+from PIL import Image
 from decouple import config
 logger = logging.getLogger('crime_in_your_neighbourhood')
 coloredlogs.install(level=config('LOG_LEVEL', 'INFO'), logger=logger)
@@ -10,9 +11,10 @@ coloredlogs.install(level=config('LOG_LEVEL', 'INFO'), logger=logger)
 # TODO: have the make_dataset.py script run if crime_data.csv does not exist or if it is older than 1 day (or some other time period)
 
 # --------------setup
+cn_tower_image = Image.open('./assets/FlaviConTC.png')
 st.set_page_config(
     page_title='TorCrime', 
-    page_icon='🔪', 
+    page_icon=cn_tower_image,
     layout="wide", 
     initial_sidebar_state="auto", 
     menu_items=None
@@ -69,6 +71,7 @@ def get_df_groups(df_in):
         group = ' - '.join(group_by)
         df_groups[group] = df_in.groupby(group_by).size().reset_index()
         df_groups[group].rename(columns={0: 'Crimes'}, inplace=True)
+        df_groups[group] = df_groups[group].sort_values(by='Year', ascending=False)
     return df_groups
 
 def plot_crimes_by_group(metric_df, var_to_group_by_col, metric_col='Crimes', hover_data=None):
@@ -105,6 +108,37 @@ def plot_crimes_by_group(metric_df, var_to_group_by_col, metric_col='Crimes', ho
             )
         st.plotly_chart(p, use_container_width=True)
 
+def show_metric(
+        df, 
+        y_col, 
+        format_str='{:,}', 
+        delta_color='normal', 
+        title=None, 
+        help=None, 
+        calc_per_change=True
+    ):
+        if title is None:
+            title = y_col
+        if calc_per_change:
+            try:
+                percentage_change = (
+                    100 * ((df[y_col].iloc[0] / df[y_col].iloc[1]) - 1)
+                )
+                delta='{change}% (YoY)'.format(
+                    change=round(percentage_change, 2)
+                )
+            except Exception as err:
+                logger.error(err)
+                delta = None
+        else: 
+            delta = None
+        st.metric(
+            title,
+            value=format_str.format(df[y_col].iloc[0]),
+            delta=delta,
+            delta_color=delta_color,
+            help=help
+        )
 
 # --------------load data
 df = load_data(todays_date=todays_date)
@@ -113,7 +147,7 @@ options = get_options(todays_date=todays_date, df=df)
 
 # ---------------dashboard parameters / filters
 neighbourhood = st.selectbox(
-    'Choose your Neighbourhood',
+    'Choose a Neighbourhood',
     ['All Neighbourhoods'] + df['Neighbourhood'].sort_values().unique().tolist(),
     index=None,
     placeholder='start typing...'
@@ -147,9 +181,23 @@ df_filtered = df[
 if neighbourhood != 'All Neighbourhoods':
     df_filtered = df_filtered[df_filtered['Neighbourhood'] == neighbourhood]
 df_groups = get_df_groups(df_filtered)
+max_year = int(df_filtered['Year'].max())
 
 
 # -------------plots
+cols = st.columns(len(crimes))
+for i in range(len(crimes)):
+    crime_type = crimes[i]
+    with cols[i]:
+        show_metric(
+            df_groups['Crime Type - Year'][
+                df_groups['Crime Type - Year']['Crime Type'] == crime_type
+            ],
+            y_col='Crimes',
+            title=crime_type,
+            help=f'{crime_type}s for `{max_year}` in {neighbourhood}',
+        )
+
 plot_crimes_by_group(
     metric_df=df_groups['Crime Type - Year'], 
     var_to_group_by_col='Crime Type',
