@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 coloredlogs.install(level=config('LOG_LEVEL', 'INFO'), logger=logger)
 
 
-def clean_data(in_df: pd.DataFrame):
+def clean_data(in_df: pd.DataFrame, save_path: str):
     df = in_df.copy()
     logger.info("Cleaning the data... 🧹")
 
@@ -48,16 +48,14 @@ def clean_data(in_df: pd.DataFrame):
     df = df.join(new_df)
     logger.info(f"Data cleaned. ✅ \n{df}")
     assert in_df.shape[0] == df.shape[0], f"Expected {in_df.shape[0]} output records, got {df.shape[0]} output records"
-    return df
-
-def save_data(df: pd.DataFrame, path: str):
-    logger.info(f"Saving data to {path}... 📁")
-    df.to_csv(path, index=False)
+    logger.info(f"Saving data to {save_path}... 📁")
+    df.to_csv(save_path, index=False)
     logger.info("Data saved. ✅")
+    logger.info("Done. 🎉")
+    return df
 
 if __name__ == "__main__":
     df = pd.read_csv('data/crime_data.csv')
     df = df.drop(columns=['Unnamed: 0'])
-    clean_df = clean_data(df)
-    save_data(clean_df, 'data/cleaned_crime_data.csv')
-    logger.info("Done. 🎉")
+    clean_df = clean_data(df, save_path='data/cleaned_crime_data.csv')
+    

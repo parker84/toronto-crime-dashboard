@@ -24,7 +24,7 @@ params = {
 }
 
 # --------------main
-def scrape_data(params=params):
+def scrape_data(write_path='data/crime_data.csv', params=params):
     logger.info("Hitting the API... 🎯")
 
     result = requests.get(url, params=params)
@@ -58,9 +58,9 @@ def scrape_data(params=params):
     logger.info(
         f"Max year/month in dataframe: {df['properties'].iloc[-1]['OCC_YEAR']}/{df['properties'].iloc[-1]['OCC_MONTH']}," +\
             f" min year/month in dataframe: {df['properties'].iloc[0]['OCC_YEAR']}/{df['properties'].iloc[0]['OCC_MONTH']} 📅")
-    logger.info(f"Saving data to data/crime_data.csv... 📁")
+    logger.info(f"Saving data to {write_path}... 📁")
     df.to_csv('data/raw/crime_data.csv', index=True)
-    logger.info(f"Data saved to data/crime_data.csv ({df.shape[0]} records)")
+    logger.info(f"Data saved to {write_path} ({df.shape[0]} records)")
     logger.info("Done. ✅")
     return df
 
