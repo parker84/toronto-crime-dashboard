@@ -55,26 +55,25 @@ def get_options(todays_date, df):
         'neighbourhoods': df['Neighbourhood'].sort_values().unique(),
         'max_year': int(df['Year'].max()),
         'min_year': int(df['Year'].min()),
+        'premises_types': df['Premises Type'].sort_values().unique(),
     }
     logger.info(f"Options got got ✅. \n{options}")
     return options
 
 @st.cache_data()
-def get_df_groups(df_in):
-    df_groups = {}
-    for group_by in [
-        ['Year'], 
-        ['Crime Type', 'Year'],
-        ['Offence', 'Year'],
-        ['Location Type', 'Year'],
-    ]:
-        group = ' - '.join(group_by)
-        df_groups[group] = df_in.groupby(group_by).size().reset_index()
-        df_groups[group].rename(columns={0: 'Crimes'}, inplace=True)
-        df_groups[group] = df_groups[group].sort_values(by='Year', ascending=False)
-    return df_groups
+def get_df_group(df_in, group_by):
+    df_group = df_in.groupby([group_by, 'Year']).size().reset_index()
+    df_group.rename(columns={0: 'Crimes'}, inplace=True)
+    df_group = df_group.sort_values(by='Year', ascending=False)
+    return df_group
 
-def plot_crimes_by_group(metric_df, var_to_group_by_col, metric_col='Crimes', hover_data=None):
+def plot_crimes_by_group(
+        metric_df, 
+        var_to_group_by_col, 
+        bar_chart=True,
+        metric_col='Crimes', 
+        hover_data=None
+    ):
     col1, col2 = st.columns(2)
     bar_metric_df = metric_df[metric_df[metric_col].isnull() == False]
     max_year = bar_metric_df['Year'].max()
@@ -97,14 +96,26 @@ def plot_crimes_by_group(metric_df, var_to_group_by_col, metric_col='Crimes', ho
             )
         st.plotly_chart(p, use_container_width=True)
     with col2:
-        p = px.bar(
+        if bar_chart:
+            p = px.bar(
+                    bar_metric_df,
+                    y=var_to_group_by_col,
+                    x=metric_col,
+                    orientation='h',
+                    title=f'{metric_col} by {var_to_group_by_col} (Year = {int(max_year)})',
+                    hover_data=hover_data,
+                    category_orders=category_orders
+                )
+            st.plotly_chart(p, use_container_width=True)
+        else:
+            p = px.pie(
                 bar_metric_df,
-                y=var_to_group_by_col,
-                x=metric_col,
-                orientation='h',
+                names=var_to_group_by_col,
+                values=metric_col,
                 title=f'{metric_col} by {var_to_group_by_col} (Year = {int(max_year)})',
-                hover_data=hover_data,
-                category_orders=category_orders
+                hole=0.4,
+                category_orders=category_orders,
+                hover_data=hover_data
             )
         st.plotly_chart(p, use_container_width=True)
 
@@ -146,12 +157,20 @@ options = get_options(todays_date=todays_date, df=df)
 
 
 # ---------------dashboard parameters / filters
-neighbourhood = st.selectbox(
-    'Choose a Neighbourhood',
-    ['All Neighbourhoods'] + df['Neighbourhood'].sort_values().unique().tolist(),
-    index=None,
-    placeholder='start typing...'
-)
+col1, col2 = st.columns(2)
+with col1:
+    neighbourhood = st.selectbox(
+        'Choose a Neighbourhood',
+        ['All Neighbourhoods 🦝'] + df['Neighbourhood'].sort_values().unique().tolist(),
+        index=None,
+        placeholder='start typing...'
+    )
+with col2:
+    group = st.selectbox(
+        'Group By',
+        ['Crime Type', 'Premises Type', 'Offence', 'Location Type'],
+        index=0,
+    )
 
 if neighbourhood is None:
     if st.button("Or... Find your Neighbourhood by Address 🏠"):
@@ -159,13 +178,18 @@ if neighbourhood is None:
 
 with st.sidebar.expander("Filtering Options", expanded=False):
     years = st.slider(
-        'Year', min_value=options['min_year'], max_value=options['max_year'],
+        'Year', min_value=2014, max_value=options['max_year'],
         value=(options['max_year']-5, options['max_year'])
     )
     crimes = st.multiselect(
         'Crimes',
         options=options['crime_types'],
         default=options['crime_types'],
+    )
+    premises = st.multiselect(
+        'Premises',
+        options=options['premises_types'],
+        default=options['premises_types'],
     )
 
 if neighbourhood is None:
@@ -176,32 +200,37 @@ if neighbourhood is None:
 df_filtered = df[
     (df['Year'] >= years[0]) &
     (df['Year'] <= years[1]) &
-    (df['Crime Type'].isin(crimes))
+    (df['Crime Type'].isin(crimes)) &
+    (df['Premises Type'].isin(premises))
 ]
-if neighbourhood != 'All Neighbourhoods':
+if neighbourhood != 'All Neighbourhoods 🦝':
     df_filtered = df_filtered[df_filtered['Neighbourhood'] == neighbourhood]
-df_groups = get_df_groups(df_filtered)
+df_group = get_df_group(df_filtered, group_by=group)
+group_values = df_group.sort_values(by='Crimes', ascending=False)[group].unique().tolist()
 max_year = int(df_filtered['Year'].max())
 
 
-# -------------plots
-cols = st.columns(len(crimes))
-for i in range(len(crimes)):
-    crime_type = crimes[i]
+# -------------visuals
+top_5_group_values = group_values[:5]
+n_group_vals = len(top_5_group_values)
+cols = st.columns(n_group_vals)
+for i in range(n_group_vals):
+    group_val = group_values[i]
     with cols[i]:
         show_metric(
-            df_groups['Crime Type - Year'][
-                df_groups['Crime Type - Year']['Crime Type'] == crime_type
+            df_group[
+                df_group[group] == group_val
             ],
             y_col='Crimes',
-            title=crime_type,
-            help=f'{crime_type}s for `{max_year}` in {neighbourhood}',
+            title=group_val,
+            help=f'{group_val} Crimes for `{max_year}` in {neighbourhood}',
         )
 
 plot_crimes_by_group(
-    metric_df=df_groups['Crime Type - Year'], 
-    var_to_group_by_col='Crime Type',
+    metric_df=df_group, 
+    var_to_group_by_col=group,
     metric_col='Crimes',
+    bar_chart=False,
 )
 
 
