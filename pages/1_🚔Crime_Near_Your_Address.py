@@ -64,12 +64,11 @@ with st.form(key='my_form'):
     submit_button = st.form_submit_button(label='View Crimes 🦝', type='primary')
 
 if submit_button:
-    with st.spinner(f"🔍 Searching for crimes..."):
-        crimes_near_address_df = find_crimes_near_address(
-            address=address, 
-            crime_df=df_filtered,
-            walking_mins=10
-        )
+    crimes_near_address_df = find_crimes_near_address(
+        address=address, 
+        crime_df=df_filtered,
+        walking_mins=10
+    )
     with st.spinner(f"📊 Plotting data..."):
         df_group = get_df_group(crimes_near_address_df, group_by=group)
         group_values = df_group.sort_values(by='Crimes', ascending=False)[group].unique().tolist()

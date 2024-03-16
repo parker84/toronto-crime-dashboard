@@ -29,6 +29,7 @@ def calc_distances(filtered_crime_df, lat, lon):
     progress_bar.empty()
     return distances
 
+@st.cache_data()
 def find_crimes_near_address(address, crime_df, walking_mins=10):
     filtered_crime_df = crime_df.copy()
     logger.info("Filtering to radius around address...")
