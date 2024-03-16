@@ -28,8 +28,9 @@ def load_or_scrape_data() -> pd.DataFrame:
         logger.info(f"Data loaded. ✅ \n{df}")
     else:
         logger.info('Cleaned data does not exist - scraping and cleaning...')
-        df = scrape_data(write_path=RAW_DATA_PATH)
-        df = clean_data(in_df=df, save_path=CLEAN_DATA_PATH)
+        scrape_data(write_path=RAW_DATA_PATH)
+        df = pd.read_csv(RAW_DATA_PATH)
+        clean_data(in_df=df, save_path=CLEAN_DATA_PATH)
     return df
 
 def check_if_data_is_up_to_date(df) -> bool:
