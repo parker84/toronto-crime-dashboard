@@ -27,8 +27,10 @@ def load_or_scrape_data() -> pd.DataFrame:
         df = pd.read_csv(CLEAN_DATA_PATH)
         logger.info(f"Data loaded. ✅ \n{df}")
     else:
-        logger.info('Cleaned data does not exist - scraping and cleaning...')
-        scrape_data(write_path=RAW_DATA_PATH)
+        logger.info('Cleaned data does not exist...')
+        if not os.path.exists(RAW_DATA_PATH):
+            logger.info('Raw data does not exist...')
+            scrape_data(write_path=RAW_DATA_PATH)
         df = pd.read_csv(RAW_DATA_PATH)
         clean_data(in_df=df, save_path=CLEAN_DATA_PATH)
     return df
