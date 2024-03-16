@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import coloredlogs, logging
-from streamlit_theme import st_theme
 from plotly import express as px
 from utils.st_helpers import (
     load_data, 
@@ -25,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="auto", 
     menu_items=None
 )
-st.title("🌃 Toronto Crime Dashboard")
+st.title("🚔 Toronto Crime Dashboard")
 
 
 # --------------load data
@@ -62,7 +61,7 @@ with st.form(key='my_form'):
             ['Crime Type', 'Premises Type', 'Offence', 'Location Type', 'Hour', 'Day of Week', 'Month'],
             index=0,
         )
-    submit_button = st.form_submit_button(label='View Crimes 🦝')
+    submit_button = st.form_submit_button(label='View Crimes 🦝', type='primary')
 
 if submit_button:
     with st.spinner(f"🔍 Searching for crimes..."):

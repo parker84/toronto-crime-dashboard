@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import coloredlogs, logging
 from plotly import express as px
-from streamlit_theme import st_theme
 from utils.st_helpers import (
     load_data, 
     get_options, 
@@ -15,9 +14,6 @@ from PIL import Image
 from decouple import config
 logger = logging.getLogger('crime_in_your_neighbourhood')
 coloredlogs.install(level=config('LOG_LEVEL', 'INFO'), logger=logger)
-
-# TODO: check if there may be new data available and if so - trigger the make_dataset.py script to run
-# TODO: have the make_dataset.py script run if crime_data.csv does not exist or if it is older than 1 day (or some other time period)
 
 # --------------setup
 cn_tower_image = Image.open('./assets/FlaviConTC.png')
@@ -54,7 +50,7 @@ with col2:
 
 if neighbourhood is None:
     if st.button("Or... Find your Neighbourhood by Address 🏠"):
-        st.switch_page("pages/1_🪓Crime_Near_Your_Address.py")
+        st.switch_page("pages/1_🚔Crime_Near_Your_Address.py")
 
 with st.sidebar.expander("Filtering Options", expanded=False):
     years, crimes, premises = sidebar_filters(options=options)
