@@ -31,9 +31,9 @@ def load_or_scrape_data() -> pd.DataFrame:
         if not os.path.exists(RAW_DATA_PATH):
             logger.info('Raw data does not exist...')
             scrape_data(write_path=RAW_DATA_PATH)
-        df = pd.read_csv(RAW_DATA_PATH)
-        clean_data(in_df=df, save_path=CLEAN_DATA_PATH)
-    return df
+        raw_df = pd.read_csv(RAW_DATA_PATH)
+        clean_df = clean_data(in_df=raw_df, save_path=CLEAN_DATA_PATH)
+    return clean_df
 
 def check_if_data_is_up_to_date(df) -> bool:
     return True # TODO: implement this
