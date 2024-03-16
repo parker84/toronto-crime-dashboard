@@ -17,8 +17,8 @@ def clean_data(in_df: pd.DataFrame):
         row = df.iloc[i] # => we just need to ensure we keep the order correct
         new_row = {}
         #-----------geometry
-        new_row['latitude'] = eval(row['geometry'])['coordinates'][0]
-        new_row['longitude'] = eval(row['geometry'])['coordinates'][1]
+        new_row['latitude'] = eval(row['geometry'])['coordinates'][1]
+        new_row['longitude'] = eval(row['geometry'])['coordinates'][0]
         #-----------properties
         # location
         new_row['premises_type'] = eval(row['properties'])['PREMISES_TYPE']
