@@ -24,8 +24,8 @@ def load_or_scrape_data() -> pd.DataFrame:
     if os.path.exists(CLEAN_DATA_PATH):
         logger.info('Clean data exists.')
         logger.info(f"Loading the data... 📁")
-        df = pd.read_csv(CLEAN_DATA_PATH)
-        logger.info(f"Data loaded. ✅ \n{df}")
+        clean_df = pd.read_csv(CLEAN_DATA_PATH)
+        logger.info(f"Data loaded. ✅ \n{clean_df}")
     else:
         logger.info('Cleaned data does not exist...')
         if not os.path.exists(RAW_DATA_PATH):

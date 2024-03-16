@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="auto", 
     menu_items=None
 )
-st.title("🔪 Toronto Crime Dashboard")
+st.title("🦝 Toronto Crime Dashboard")
 
 # --------------load data
 todays_date = pd.to_datetime('today').date()
