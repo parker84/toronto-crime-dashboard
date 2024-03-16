@@ -13,7 +13,8 @@ def clean_data(in_df: pd.DataFrame, save_path: str):
 
     new_cols = []
     # Create a progress bar using tqdm
-    for i in tqdm(range(df.shape[0])):
+    n_rows = df.shape[0]
+    for i in tqdm(range(n_rows)):
         row = df.iloc[i] # => we just need to ensure we keep the order correct
         new_row = {}
         #-----------geometry
@@ -40,6 +41,8 @@ def clean_data(in_df: pd.DataFrame, save_path: str):
         new_row['neighbourhood_140'] = eval(row['properties'])['NEIGHBOURHOOD_140']
         new_row['hood_140'.lower()] = eval(row['properties'])['HOOD_140']
         new_cols.append(new_row)
+        if i % 10000 == 0:
+            logger.info(f"Cleaned {i+1}/{n_rows} rows ... 🏃")
 
     new_df = pd.DataFrame(new_cols)
     df.reset_index(drop=True, inplace=True)
