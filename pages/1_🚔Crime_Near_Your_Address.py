@@ -108,7 +108,7 @@ if submit_button:
                 'Day of Week', 
                 'Neighbourhood'
             ],
-            height=600,
+            height=800,
             width=1200,
             center=center,
         )
