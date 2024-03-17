@@ -114,15 +114,7 @@ if submit_button:
             center=center,
         )
 
-        theme = st_theme()
-        if theme is not None:
-            if theme['base'] == 'dark':
-                mapbox_style="carto-darkmatter"
-            else:
-                mapbox_style="carto-positron"
-        else:
-            mapbox_style="carto-positron"
-
+        mapbox_style="carto-darkmatter"
         p.update_layout(mapbox_style=mapbox_style)
         st.plotly_chart(p, use_container_width=True)
 
