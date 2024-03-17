@@ -36,7 +36,7 @@ df['lon'] = df['Longitude']
 options = get_options(todays_date=todays_date, df=df)
 
 # ---------------dashboard parameters / filters
-with st.sidebar.expander("Filtering Options", expanded=False):
+with st.sidebar.expander("⚙️ Advanced Options", expanded=False):
     years, crimes, premises = sidebar_filters(options=options)
 
 df_filtered = df[

@@ -52,7 +52,7 @@ with col2:
 if neighbourhood is None:
     st.caption("If you don't know your neighbourhood, you can look it up here: [Find Your Neighbourhood](https://www.toronto.ca/city-government/data-research-maps/neighbourhoods-communities/neighbourhood-profiles/find-your-neighbourhood/#location=&lat=&lng=&zoom=)")
 
-with st.sidebar.expander("Filtering Options", expanded=False):
+with st.sidebar.expander("⚙️ Advanced Options", expanded=False):
     years, crimes, premises = sidebar_filters(options=options)
 
 if neighbourhood is None:
