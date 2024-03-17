@@ -27,6 +27,9 @@ st.set_page_config(
 )
 st.title("📊 Toronto Crime Dashboard")
 
+# ---------------constants
+PRIMARY_METRICS = ['Total Major Crimes', 'Total Major Crimes / 1000 People', 'Total Major Crimes / km^2']
+
 # --------------load data
 todays_date = pd.to_datetime('today').date()
 df = load_data(todays_date=todays_date).drop(columns=['Neighbourhood']).rename(columns={
@@ -40,6 +43,22 @@ hood_id_map_df = get_hood_140_to_nbhd_mapping(df)
 options = get_options(todays_date=todays_date, df=df)
 with open("./data/Neighbourhood_Crime_Rates_Boundary_File_clean.json", "r") as f:
     counties = json.load(f)
+neighbourhood_profiles = pd.read_csv('./data/neighbourhood-profiles-2016-140-model.csv')
+nbhd_df = pd.DataFrame([])
+nbhd_df['ID'] = neighbourhood_profiles[
+    neighbourhood_profiles['Characteristic'] == 'Neighbourhood Number'
+].iloc[0].values[6:]
+nbhd_df['Neighbourhood'] = neighbourhood_profiles.columns[6:]
+nbhd_df['Population'] = neighbourhood_profiles[
+    neighbourhood_profiles['Characteristic'] == 'Population, 2016'
+].iloc[0].values[6:]
+nbhd_df['Population'] = nbhd_df['Population'].str.replace(',', '').astype(int)
+nbhd_df['Land Area (km^2)'] = neighbourhood_profiles[
+    neighbourhood_profiles['Characteristic'] == 'Land area in square kilometres'
+].iloc[0].values[6:].astype(float)
+
+
+
 
 # ---------------dashboard parameters / filters
 col1, col2 = st.columns(2)
@@ -60,7 +79,12 @@ with col2:
 if neighbourhoods is None:
     st.caption("If you don't know your neighbourhood, you can look it up here: [Find Your Neighbourhood](https://www.toronto.ca/city-government/data-research-maps/neighbourhoods-communities/neighbourhood-profiles/find-your-neighbourhood/#location=&lat=&lng=&zoom=)")
 
-with st.sidebar.expander("Filtering Options", expanded=False):
+with st.sidebar.expander("⚙️ Advanced Options", expanded=False):
+    primary_metric = st.selectbox(
+        'Primary Metric',
+        PRIMARY_METRICS,
+        index=0,
+    )
     years, crimes, premises = sidebar_filters(options=options)
 
 if len(neighbourhoods) == 0:
@@ -82,6 +106,9 @@ df_group = df_group.merge(hood_id_map_df, on='ID', how='left')
 df_pivot = df_group.pivot(index=['ID', 'Year', 'Neighbourhood'], columns=group, values='Crimes').reset_index()
 group_vals = [col for col in df_pivot.columns if col not in ['ID', 'Year', 'Neighbourhood']]
 df_pivot['Total Major Crimes'] = df_pivot[group_vals].sum(axis=1)
+df_pivot = df_pivot.merge(nbhd_df[['ID', 'Population', 'Land Area (km^2)']], on='ID', how='left')
+df_pivot['Total Major Crimes / 1000 People'] = (df_pivot['Total Major Crimes'] / df_pivot['Population'] * 1000).round(1)
+df_pivot['Total Major Crimes / km^2'] = (df_pivot['Total Major Crimes'] / df_pivot['Land Area (km^2)']).round(1)
 df_pivot_max_year = df_pivot[df_pivot['Year'] == max_year]
 
 theme = st_theme()
@@ -96,11 +123,11 @@ else:
 fig=(
     px.choropleth(df_pivot_max_year, 
         geojson=counties, 
-        color="Total Major Crimes",
+        color=primary_metric,
         locations="ID",
         featureidkey="properties.clean_nbdh_id",
         scope="north america",
-        hover_data=["Neighbourhood", "Total Major Crimes"] + group_vals + ["Year"],
+        hover_data=["Neighbourhood", primary_metric] + group_vals + ["Year"],
     )
     .update_geos(showcountries=False, showcoastlines=False, showland=False, showlakes=False, fitbounds="locations")
     .update_layout(
@@ -110,10 +137,15 @@ fig=(
 )
 st.plotly_chart(fig, use_container_width=True)
 
-df_out = df_pivot_max_year.sort_values(by=["Total Major Crimes"], ascending=False)
-df_out = df_out[["Neighbourhood", "Total Major Crimes"] + group_vals + ["Year"]]
+df_out = df_pivot_max_year.sort_values(by=[primary_metric], ascending=False)
+df_out = df_out[
+    ["Neighbourhood", primary_metric] + 
+    [col for col in PRIMARY_METRICS if col != primary_metric] +
+    group_vals + 
+    ["Year", "Population", "Land Area (km^2)"]
+]
 df_out.index = range(1, len(df_out) + 1)
-df_out['Total Major Crimes'] = df_out['Total Major Crimes'].astype(float)
+df_out[primary_metric] = df_out[primary_metric].astype(float)
 for col in group_vals:
     df_out[col] = df_out[col].astype(float)
 st.dataframe(
@@ -122,12 +154,12 @@ st.dataframe(
         "Neighbourhood": st.column_config.TextColumn(
             "Neighbourhood", width="Medium"
         ),
-        'Total Major Crimes': st.column_config.ProgressColumn(
-            "Total Major Crimes",
+        primary_metric: st.column_config.ProgressColumn(
+            primary_metric,
             format="%.0f",
             width="medium",
             min_value=0.0,
-            max_value=df_out['Total Major Crimes'].max(),
+            max_value=df_out[primary_metric].max(),
         ),
         'Year': st.column_config.TextColumn(
             "Year", width="small"
@@ -140,6 +172,6 @@ st.dataframe(
 plot_crimes_by_group(
     metric_df=df_pivot,
     var_to_group_by_col="Neighbourhood",
-    metric_col="Total Major Crimes",
+    metric_col=primary_metric,
     bar_chart=True,
 )
