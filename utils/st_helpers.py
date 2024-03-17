@@ -199,7 +199,4 @@ def get_hood_140_to_nbhd_mapping(df):
     assert 'ID' in df.columns, 'missing "ID" column'
     assert 'Neighbourhood' in df.columns, 'missing "Neighbourhood" column'
     out_df = df[['ID', 'Neighbourhood']].drop_duplicates()
-    out_df['Neighbourhood'] = [
-        nbhd.split('(')[0].strip() for nbhd in out_df['Neighbourhood']
-    ]
     return out_df

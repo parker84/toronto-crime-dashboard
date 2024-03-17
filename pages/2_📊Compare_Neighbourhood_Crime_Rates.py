@@ -32,6 +32,9 @@ df = load_data(todays_date=todays_date).drop(columns=['Neighbourhood']).rename(c
     'neighbourhood_140': 'Neighbourhood',
     'hood_140': 'ID',
 })
+df['Neighbourhood'] = [
+    nbhd.split('(')[0].strip() for nbhd in df['Neighbourhood']
+]
 hood_id_map_df = get_hood_140_to_nbhd_mapping(df)
 options = get_options(todays_date=todays_date, df=df)
 with open("./data/Neighbourhood_Crime_Rates_Boundary_File_clean.json", "r") as f:
@@ -101,6 +104,9 @@ st.plotly_chart(fig, use_container_width=True)
 df_out = df_out_max_year.sort_values(by=["Total Major Crimes"], ascending=False)
 df_out = df_out[["Neighbourhood", "Total Major Crimes"] + group_vals + ["Year"]]
 df_out.index = range(1, len(df_out) + 1)
+df_out['Total Major Crimes'] = df_out['Total Major Crimes'].astype(float)
+for col in group_vals:
+    df_out[col] = df_out[col].astype(float)
 st.dataframe(
     df_out, 
     column_config={
@@ -111,8 +117,8 @@ st.dataframe(
             "Total Major Crimes",
             format="%.0f",
             width="medium",
-            min_value=0,
-            max_value=df_out_max_year['Total Major Crimes'].max(),
+            min_value=0.0,
+            max_value=df_out['Total Major Crimes'].max(),
         ),
     },
     use_container_width=True
