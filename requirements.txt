@@ -48,6 +48,7 @@ rich==13.7.1
 rpds-py==0.18.0
 six==1.16.0
 smmap==5.0.1
+st-theme==1.2.2
 stack-data==0.6.3
 streamlit==1.32.2
 tenacity==8.2.3

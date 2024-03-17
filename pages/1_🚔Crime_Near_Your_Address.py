@@ -10,6 +10,7 @@ from utils.st_helpers import (
     sidebar_filters
 )
 from utils.crime_finder import find_crimes_near_address
+from streamlit_theme import st_theme
 from PIL import Image
 from decouple import config
 logger = logging.getLogger('crime_near_your_address')
@@ -113,7 +114,16 @@ if submit_button:
             center=center,
         )
 
-        p.update_layout(mapbox_style="carto-darkmatter")
+        theme = st_theme()
+        if theme is not None:
+            if theme['base'] == 'dark':
+                mapbox_style="carto-darkmatter"
+            else:
+                mapbox_style="carto-positron"
+        else:
+            mapbox_style="carto-positron"
+
+        p.update_layout(mapbox_style=mapbox_style)
         st.plotly_chart(p, use_container_width=True)
 
         

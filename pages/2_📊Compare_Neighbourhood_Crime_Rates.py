@@ -11,6 +11,7 @@ from utils.st_helpers import (
     get_hood_140_to_nbhd_mapping
 )
 from PIL import Image
+from streamlit_theme import st_theme
 from decouple import config
 logger = logging.getLogger('compare_neighbourhood_crime_rates')
 coloredlogs.install(level=config('LOG_LEVEL', 'INFO'), logger=logger)
@@ -83,19 +84,28 @@ group_vals = [col for col in df_pivot.columns if col not in ['ID', 'Year', 'Neig
 df_pivot['Total Major Crimes'] = df_pivot[group_vals].sum(axis=1)
 df_pivot_max_year = df_pivot[df_pivot['Year'] == max_year]
 
+theme = st_theme()
+if theme is not None:
+    if theme['base'] == 'dark':
+        template = "plotly_dark"
+    else:
+        template = "plotly"
+else:
+    template = "plotly"
+
 fig=(
     px.choropleth(df_pivot_max_year, 
         geojson=counties, 
         color="Total Major Crimes",
         locations="ID",
         featureidkey="properties.clean_nbdh_id",
-        color_continuous_scale="Viridis",
         scope="north america",
         hover_data=["Neighbourhood", "Total Major Crimes"] + group_vals + ["Year"],
     )
     .update_geos(showcountries=False, showcoastlines=False, showland=False, showlakes=False, fitbounds="locations")
     .update_layout(
         margin={"r":0,"t":0,"l":0,"b":0},
+        template=template,
     )
 )
 st.plotly_chart(fig, use_container_width=True)

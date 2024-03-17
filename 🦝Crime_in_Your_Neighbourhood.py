@@ -11,6 +11,7 @@ from utils.st_helpers import (
     sidebar_filters
 )
 from PIL import Image
+from streamlit_theme import st_theme
 from decouple import config
 logger = logging.getLogger('crime_in_your_neighbourhood')
 coloredlogs.install(level=config('LOG_LEVEL', 'INFO'), logger=logger)
@@ -135,5 +136,14 @@ with st.spinner("Loading the map... 🗺️"):
         center=center,
     )
 
-    p.update_layout(mapbox_style="carto-darkmatter")
+    theme = st_theme()
+    if theme is not None:
+        if theme['base'] == 'dark':
+            mapbox_style="carto-darkmatter"
+        else:
+            mapbox_style="carto-positron"
+    else:
+        mapbox_style="carto-positron"
+
+    p.update_layout(mapbox_style=mapbox_style)
     st.plotly_chart(p, use_container_width=True)
