@@ -41,6 +41,12 @@ def check_if_data_is_up_to_date(df) -> bool:
 def update_data(df) -> pd.DataFrame:
     pass # TODO: implement this
 
+def clean_crime_types(crime_type):
+    if crime_type == 'Theft Over':
+        return 'Theft Over $5k'
+    else:
+        return crime_type
+
 @st.cache_data()
 def load_data(todays_date):
     # todays_date - is here so that we can trigger the cache to refresh when the date changes
@@ -63,6 +69,7 @@ def load_data(todays_date):
         'latitude': 'Latitude',
         'longitude': 'Longitude',
     })
+    df['Crime Type'] = df['Crime Type'].apply(clean_crime_types)
     return df
 
 @st.cache_data()
