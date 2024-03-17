@@ -6,7 +6,7 @@ from plotly import express as px
 from utils.st_helpers import (
     load_data, 
     get_options, 
-    get_df_group, 
+    plot_crimes_by_group,
     sidebar_filters,
     get_hood_140_to_nbhd_mapping
 )
@@ -78,13 +78,13 @@ if neighbourhoods != ['All Neighbourhoods 🦝']:
 df_group = df_filtered.groupby(['ID', group, 'Year']).size().reset_index()
 df_group.rename(columns={0: 'Crimes'}, inplace=True)
 df_group = df_group.merge(hood_id_map_df, on='ID', how='left')
-df_out = df_group.pivot(index=['ID', 'Year', 'Neighbourhood'], columns=group, values='Crimes').reset_index()
-group_vals = [col for col in df_out.columns if col not in ['ID', 'Year', 'Neighbourhood']]
-df_out['Total Major Crimes'] = df_out[group_vals].sum(axis=1)
-df_out_max_year = df_out[df_out['Year'] == max_year]
+df_pivot = df_group.pivot(index=['ID', 'Year', 'Neighbourhood'], columns=group, values='Crimes').reset_index()
+group_vals = [col for col in df_pivot.columns if col not in ['ID', 'Year', 'Neighbourhood']]
+df_pivot['Total Major Crimes'] = df_pivot[group_vals].sum(axis=1)
+df_pivot_max_year = df_pivot[df_pivot['Year'] == max_year]
 
 fig=(
-    px.choropleth(df_out_max_year, 
+    px.choropleth(df_pivot_max_year, 
         geojson=counties, 
         color="Total Major Crimes",
         locations="ID",
@@ -100,8 +100,7 @@ fig=(
 )
 st.plotly_chart(fig, use_container_width=True)
 
-# TODO: somehow can we still see trends over time per neighbourhood?
-df_out = df_out_max_year.sort_values(by=["Total Major Crimes"], ascending=False)
+df_out = df_pivot_max_year.sort_values(by=["Total Major Crimes"], ascending=False)
 df_out = df_out[["Neighbourhood", "Total Major Crimes"] + group_vals + ["Year"]]
 df_out.index = range(1, len(df_out) + 1)
 df_out['Total Major Crimes'] = df_out['Total Major Crimes'].astype(float)
@@ -111,7 +110,7 @@ st.dataframe(
     df_out, 
     column_config={
         "Neighbourhood": st.column_config.TextColumn(
-            "Username", width="Medium"
+            "Neighbourhood", width="Medium"
         ),
         'Total Major Crimes': st.column_config.ProgressColumn(
             "Total Major Crimes",
@@ -120,7 +119,17 @@ st.dataframe(
             min_value=0.0,
             max_value=df_out['Total Major Crimes'].max(),
         ),
+        'Year': st.column_config.TextColumn(
+            "Year", width="small"
+        ),
     },
     use_container_width=True
 )
 
+
+plot_crimes_by_group(
+    metric_df=df_pivot,
+    var_to_group_by_col="Neighbourhood",
+    metric_col="Total Major Crimes",
+    bar_chart=True,
+)
