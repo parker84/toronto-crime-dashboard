@@ -38,20 +38,20 @@ with open("./data/Neighbourhood_Crime_Rates_Boundary_File_clean.json", "r") as f
     counties = json.load(f)
 
 # ---------------dashboard parameters / filters
-# col1, col2 = st.columns(2)
-# with col1:
-neighbourhoods = st.multiselect(
-    'Choose Neighbourhoods to Compare',
-    ['All Neighbourhoods 🦝'] + df['Neighbourhood'].sort_values().unique().tolist(),
-    default=['All Neighbourhoods 🦝'],
-    placeholder='start typing...'
-)
-# with col2:
-#     group = st.selectbox(
-#         'Group By',
-#         ['Crime Type', 'Premises Type', 'Offence', 'Location Type', 'Hour', 'Day of Week', 'Month'],
-#         index=0,
-#     )
+col1, col2 = st.columns(2)
+with col1:
+    neighbourhoods = st.multiselect(
+        'Choose Neighbourhoods to Compare',
+        ['All Neighbourhoods 🦝'] + df['Neighbourhood'].sort_values().unique().tolist(),
+        default=['All Neighbourhoods 🦝'],
+        placeholder='start typing...'
+    )
+with col2:
+    group = st.selectbox(
+        'Group By',
+        ['Crime Type', 'Premises Type'],
+        index=0,
+    )
 
 if neighbourhoods is None:
     st.caption("If you don't know your neighbourhood, you can look it up here: [Find Your Neighbourhood](https://www.toronto.ca/city-government/data-research-maps/neighbourhoods-communities/neighbourhood-profiles/find-your-neighbourhood/#location=&lat=&lng=&zoom=)")
@@ -69,22 +69,26 @@ df_filtered = df[
     (df['Crime Type'].isin(crimes)) &
     (df['Premises Type'].isin(premises))
 ]
+max_year = int(df_filtered['Year'].max())
 if neighbourhoods != ['All Neighbourhoods 🦝']:
     df_filtered = df_filtered[df_filtered['Neighbourhood'].isin(neighbourhoods)]
-df_group = get_df_group(df_filtered, group_by='ID')
+df_group = df_filtered.groupby(['ID', group, 'Year']).size().reset_index()
+df_group.rename(columns={0: 'Crimes'}, inplace=True)
 df_group = df_group.merge(hood_id_map_df, on='ID', how='left')
-max_year = int(df_filtered['Year'].max())
-df_group_max_year = df_group[df_group['Year'] == max_year]
+df_out = df_group.pivot(index=['ID', 'Year', 'Neighbourhood'], columns=group, values='Crimes').reset_index()
+group_vals = [col for col in df_out.columns if col not in ['ID', 'Year', 'Neighbourhood']]
+df_out['Total Major Crimes'] = df_out[group_vals].sum(axis=1)
+df_out_max_year = df_out[df_out['Year'] == max_year]
 
 fig=(
-    px.choropleth(df_group_max_year, 
+    px.choropleth(df_out_max_year, 
         geojson=counties, 
-        color="Crimes",
+        color="Total Major Crimes",
         locations="ID",
         featureidkey="properties.clean_nbdh_id",
         color_continuous_scale="Viridis",
         scope="north america",
-        hover_data=["Neighbourhood", "Crimes", "Year"],
+        hover_data=["Neighbourhood", "Total Major Crimes"] + group_vals + ["Year"],
     )
     .update_geos(showcountries=False, showcoastlines=False, showland=False, showlakes=False, fitbounds="locations")
     .update_layout(
@@ -93,10 +97,24 @@ fig=(
 )
 st.plotly_chart(fig, use_container_width=True)
 
-# TODO: lets see this crime types by neighbourhood + a totals column
 # TODO: somehow can we still see trends over time per neighbourhood?
-df_out = df_group_max_year.sort_values(by=["Crimes"], ascending=False)
-df_out = df_out[["Neighbourhood", "Crimes", "Year", ]]
+df_out = df_out_max_year.sort_values(by=["Total Major Crimes"], ascending=False)
+df_out = df_out[["Neighbourhood", "Total Major Crimes"] + group_vals + ["Year"]]
 df_out.index = range(1, len(df_out) + 1)
-st.dataframe(df_out, use_container_width=True)
+st.dataframe(
+    df_out, 
+    column_config={
+        "Neighbourhood": st.column_config.TextColumn(
+            "Username", width="Medium"
+        ),
+        'Total Major Crimes': st.column_config.ProgressColumn(
+            "Total Major Crimes",
+            format="%.0f",
+            width="medium",
+            min_value=0,
+            max_value=df_out_max_year['Total Major Crimes'].max(),
+        ),
+    },
+    use_container_width=True
+)
 
