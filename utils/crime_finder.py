@@ -31,7 +31,6 @@ def calc_distances(filtered_crime_df, lat, lon):
 
 @st.cache_data()
 def find_crimes_near_address(address, crime_df, walking_mins=10):
-    filtered_crime_df = crime_df.copy()
     logger.info("Filtering to radius around address...")
     hours = walking_mins / 60
     km_radius = round(hours * 5, 3) # we assume 5 km/h walk speed
@@ -43,10 +42,10 @@ def find_crimes_near_address(address, crime_df, walking_mins=10):
         time.sleep(5)
         location = geocoder.geocode(address)
     lat, lon = location.latitude, location.longitude
-    filtered_crime_df["distance_to_address"] = calc_distances(filtered_crime_df, lat, lon)
-    filtered_crime_df_within_radius = (
-        filtered_crime_df
-        [filtered_crime_df["distance_to_address"] <= km_radius]
+    crime_df["distance_to_address"] = calc_distances(crime_df, lat, lon)
+    crime_df_within_radius = (
+        crime_df
+        [crime_df["distance_to_address"] <= km_radius]
     )
     logger.info("Filtered to radius around address. ✅")
-    return filtered_crime_df_within_radius
+    return crime_df_within_radius

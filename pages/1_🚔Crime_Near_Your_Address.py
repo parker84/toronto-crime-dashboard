@@ -7,7 +7,8 @@ from utils.st_helpers import (
     get_options, 
     get_df_group, 
     plot_crimes_by_group, 
-    sidebar_filters
+    sidebar_filters,
+    get_mapbox_plot
 )
 from utils.crime_finder import find_crimes_near_address
 from streamlit_theme import st_theme
@@ -89,33 +90,8 @@ if submit_button:
         st.dataframe(df_out)
 
     with st.spinner("Loading the map... 🗺️"):
-        center = dict(lat=df_out['Latitude'].mean(), lon=df_out['Longitude'].mean())
-        zoom = 13
-        p = px.scatter_mapbox(
-            df_out, 
-            lat="Latitude", 
-            lon="Longitude", 
-            zoom=zoom,
-            color=group,
-            hover_data=[
-                'Crime Type', 
-                'Offence', 
-                'Location Type', 
-                'Premises Type', 
-                'Year', 
-                'Month', 
-                'Day', 
-                'Hour', 
-                'Day of Week', 
-                'Neighbourhood'
-            ],
-            height=800,
-            width=1200,
-            center=center,
-        )
-
-        mapbox_style="carto-darkmatter"
-        p.update_layout(mapbox_style=mapbox_style)
+        center = dict(lat=df['Latitude'].mean(), lon=df['Longitude'].mean())
+        p = get_mapbox_plot(df_out, group, zoom=13, mapbox_style="carto-darkmatter", center=center)
         st.plotly_chart(p, use_container_width=True)
 
         

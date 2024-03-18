@@ -8,7 +8,9 @@ from utils.st_helpers import (
     get_options, 
     plot_crimes_by_group,
     sidebar_filters,
-    get_hood_140_to_nbhd_mapping
+    get_hood_140_to_nbhd_mapping,
+    load_counties,
+    load_neighbourhood_profiles
 )
 from PIL import Image
 from streamlit_theme import st_theme
@@ -41,21 +43,8 @@ df['Neighbourhood'] = [
 ]
 hood_id_map_df = get_hood_140_to_nbhd_mapping(df)
 options = get_options(todays_date=todays_date, df=df)
-with open("./data/Neighbourhood_Crime_Rates_Boundary_File_clean.json", "r") as f:
-    counties = json.load(f)
-neighbourhood_profiles = pd.read_csv('./data/neighbourhood-profiles-2016-140-model.csv')
-nbhd_df = pd.DataFrame([])
-nbhd_df['ID'] = neighbourhood_profiles[
-    neighbourhood_profiles['Characteristic'] == 'Neighbourhood Number'
-].iloc[0].values[6:]
-nbhd_df['Neighbourhood'] = neighbourhood_profiles.columns[6:]
-nbhd_df['Population'] = neighbourhood_profiles[
-    neighbourhood_profiles['Characteristic'] == 'Population, 2016'
-].iloc[0].values[6:]
-nbhd_df['Population'] = nbhd_df['Population'].str.replace(',', '').astype(int)
-nbhd_df['Land Area (km^2)'] = neighbourhood_profiles[
-    neighbourhood_profiles['Characteristic'] == 'Land area in square kilometres'
-].iloc[0].values[6:].astype(float)
+counties = load_counties()
+nbhd_df = load_neighbourhood_profiles()
 
 
 

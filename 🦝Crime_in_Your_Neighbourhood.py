@@ -8,7 +8,8 @@ from utils.st_helpers import (
     get_df_group, 
     show_metric, 
     plot_crimes_by_group, 
-    sidebar_filters
+    sidebar_filters,
+    get_mapbox_plot
 )
 from PIL import Image
 from streamlit_theme import st_theme
@@ -113,29 +114,6 @@ with st.spinner("Loading the map... 🗺️"):
     else:
         center = dict(lat=df_out['Latitude'].mean(), lon=df_out['Longitude'].mean())
         zoom = 13
-    p = px.scatter_mapbox(
-        df_out, 
-        lat="Latitude", 
-        lon="Longitude", 
-        zoom=zoom,
-        color=group,
-        hover_data=[
-            'Crime Type', 
-            'Offence', 
-            'Location Type', 
-            'Premises Type', 
-            'Year', 
-            'Month', 
-            'Day', 
-            'Hour', 
-            'Day of Week', 
-            'Neighbourhood'
-        ],
-        height=800,
-        width=1200,
-        center=center,
-    )
-
     theme = st_theme()
     if theme is not None:
         if theme['base'] == 'dark':
@@ -144,6 +122,5 @@ with st.spinner("Loading the map... 🗺️"):
             mapbox_style="carto-positron"
     else:
         mapbox_style="carto-positron"
-
-    p.update_layout(mapbox_style=mapbox_style)
+    p = get_mapbox_plot(df_out, group, zoom=zoom, mapbox_style=mapbox_style, center=center)
     st.plotly_chart(p, use_container_width=True)

@@ -4,6 +4,7 @@ import os
 from utils.data_cleaner import clean_data
 from utils.data_scraper import scrape_data
 import coloredlogs, logging
+import json
 from plotly import express as px
 from decouple import config
 logger = logging.getLogger('crime_in_your_neighbourhood')
@@ -73,6 +74,29 @@ def load_data(todays_date):
     return df
 
 @st.cache_data()
+def load_counties():
+    with open("./data/Neighbourhood_Crime_Rates_Boundary_File_clean.json", "r") as f:
+        counties = json.load(f)
+    return counties
+
+@st.cache_data()
+def load_neighbourhood_profiles():
+    neighbourhood_profiles = pd.read_csv('./data/neighbourhood-profiles-2016-140-model.csv')
+    nbhd_df = pd.DataFrame([])
+    nbhd_df['ID'] = neighbourhood_profiles[
+        neighbourhood_profiles['Characteristic'] == 'Neighbourhood Number'
+    ].iloc[0].values[6:]
+    nbhd_df['Neighbourhood'] = neighbourhood_profiles.columns[6:]
+    nbhd_df['Population'] = neighbourhood_profiles[
+        neighbourhood_profiles['Characteristic'] == 'Population, 2016'
+    ].iloc[0].values[6:]
+    nbhd_df['Population'] = nbhd_df['Population'].str.replace(',', '').astype(int)
+    nbhd_df['Land Area (km^2)'] = neighbourhood_profiles[
+        neighbourhood_profiles['Characteristic'] == 'Land area in square kilometres'
+    ].iloc[0].values[6:].astype(float)
+    return nbhd_df
+
+@st.cache_data()
 def get_options(todays_date, df):
     # todays_date - is here so that we can trigger the cache to refresh when the date changes
     logger.info(f"Getting the options... 🎛️")
@@ -93,6 +117,7 @@ def get_df_group(df_in, group_by):
     df_group = df_group.sort_values(by='Year', ascending=False)
     return df_group
 
+@st.cache_data()
 def plot_crimes_by_group(
         metric_df, 
         var_to_group_by_col, 
@@ -144,6 +169,7 @@ def plot_crimes_by_group(
             )
         st.plotly_chart(p, use_container_width=True)
 
+@st.cache_data()
 def show_metric(
         df, 
         y_col, 
@@ -176,7 +202,6 @@ def show_metric(
             help=help
         )
 
-
 def sidebar_filters(options):
     years = st.slider(
         'Year', min_value=2014, max_value=options['max_year'],
@@ -200,3 +225,30 @@ def get_hood_140_to_nbhd_mapping(df):
     assert 'Neighbourhood' in df.columns, 'missing "Neighbourhood" column'
     out_df = df[['ID', 'Neighbourhood']].drop_duplicates()
     return out_df
+
+@st.cache_data()
+def get_mapbox_plot(df, group, zoom, mapbox_style, center):
+    p = px.scatter_mapbox(
+        df, 
+        lat="Latitude", 
+        lon="Longitude", 
+        zoom=zoom,
+        color=group,
+        hover_data=[
+            'Crime Type', 
+            'Offence', 
+            'Location Type', 
+            'Premises Type', 
+            'Year', 
+            'Month', 
+            'Day', 
+            'Hour', 
+            'Day of Week', 
+            'Neighbourhood'
+        ],
+        height=800,
+        width=1200,
+        center=center,
+    )
+    p.update_layout(mapbox_style=mapbox_style)
+    return p
