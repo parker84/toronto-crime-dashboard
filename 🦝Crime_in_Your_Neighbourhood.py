@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import coloredlogs, logging
-from plotly import express as px
 from utils.st_helpers import (
     load_data, 
     get_options, 
@@ -28,11 +27,23 @@ st.set_page_config(
 )
 st.title("🦝 Toronto Crime Dashboard")
 
+# --------------helpers
+@st.cache_data()
+def filter_df(df, years, crimes, premises, neighbourhood):
+    df_filtered = df[
+        (df['Year'] >= years[0]) &
+        (df['Year'] <= years[1]) &
+        (df['Crime Type'].isin(crimes)) &
+        (df['Premises Type'].isin(premises))
+    ]
+    if neighbourhood != 'All Neighbourhoods 🦝':
+        df_filtered = df_filtered[df_filtered['Neighbourhood'] == neighbourhood]    
+    return df_filtered
+
 # --------------load data
 todays_date = pd.to_datetime('today').date()
 df = load_data(todays_date=todays_date)
 options = get_options(todays_date=todays_date, df=df)
-
 
 # ---------------dashboard parameters / filters
 col1, col2 = st.columns(2)
@@ -55,29 +66,44 @@ if neighbourhood is None:
 
 with st.sidebar.expander("⚙️ Advanced Options", expanded=False):
     years, crimes, premises = sidebar_filters(options=options)
+st.sidebar.caption("Want to say thanks? \n[Buy me a coffee ☕](https://www.buymeacoffee.com/brydon)")
 
 if neighbourhood is None:
     st.stop()
 
+# -------------helpers
+@st.cache_data()
+def get_group_values(df_group, group):
+    return df_group.sort_values(by='Crimes', ascending=False)[group].unique().tolist()
+
+@st.cache_data()
+def get_max_year(df_filtered):
+    return int(df_filtered['Year'].max())
+
+@st.cache_data()
+def show_dataframe(df_filtered):
+    df_out = df_filtered[[
+        'Date', 'Crime Type', 'Offence', 'Location Type', 'Premises Type', 'Year', 'Month', 'Day', 'Hour', 'Day of Week', 'Neighbourhood', 'Latitude', 'Longitude'
+    ]].sort_values(by=['Date', 'Hour'], ascending=[False, True])
+    df_out.index = range(1, df_out.shape[0]+1)
+    st.dataframe(df_out)
+    return df_out
 
 # --------------filtering
-df_filtered = df[
-    (df['Year'] >= years[0]) &
-    (df['Year'] <= years[1]) &
-    (df['Crime Type'].isin(crimes)) &
-    (df['Premises Type'].isin(premises))
-]
-if neighbourhood != 'All Neighbourhoods 🦝':
-    df_filtered = df_filtered[df_filtered['Neighbourhood'] == neighbourhood]
+df_filtered = filter_df(
+    df=df, 
+    years=years, 
+    crimes=crimes, 
+    premises=premises, 
+    neighbourhood=neighbourhood
+)
 df_group = get_df_group(df_filtered, group_by=group)
-group_values = df_group.sort_values(by='Crimes', ascending=False)[group].unique().tolist()
-max_year = int(df_filtered['Year'].max())
-
+group_values = get_group_values(df_group, group)
+max_year = get_max_year(df_filtered)
 
 # -------------visuals
 if group != 'Hour':
-    top_5_group_values = group_values[:5]
-    n_group_vals = len(top_5_group_values)
+    n_group_vals = len(group_values)
     cols = st.columns(n_group_vals)
     for i in range(n_group_vals):
         group_val = group_values[i]
@@ -97,30 +123,24 @@ plot_crimes_by_group(
     metric_col='Crimes',
     bar_chart=False,
 )
+ 
+if neighbourhood != 'All Neighbourhoods 🦝':
+    df_out = show_dataframe(df_filtered)
 
-
-
-df_out = df_filtered[[
-    'Date', 'Crime Type', 'Offence', 'Location Type', 'Premises Type', 'Year', 'Month', 'Day', 'Hour', 'Day of Week', 'Neighbourhood', 'Latitude', 'Longitude'
-]].sort_values(by=['Date', 'Hour'], ascending=[False, True])
-df_out.index = range(1, df_out.shape[0]+1)
-
-st.dataframe(df_out)
-
-with st.spinner("Loading the map... 🗺️"):
-    if neighbourhood == 'All Neighbourhoods 🦝':
-        center = dict(lat=43.651070, lon=-79.347015)
-        zoom = 11
-    else:
-        center = dict(lat=df_out['Latitude'].mean(), lon=df_out['Longitude'].mean())
-        zoom = 13
-    theme = st_theme()
-    if theme is not None:
-        if theme['base'] == 'dark':
-            mapbox_style="carto-darkmatter"
+    with st.spinner("Loading the map... 🗺️"):
+        if neighbourhood == 'All Neighbourhoods 🦝':
+            center = dict(lat=43.651070, lon=-79.347015)
+            zoom = 11
+        else:
+            center = dict(lat=df_out['Latitude'].mean(), lon=df_out['Longitude'].mean())
+            zoom = 13
+        theme = st_theme()
+        if theme is not None:
+            if theme['base'] == 'dark':
+                mapbox_style="carto-darkmatter"
+            else:
+                mapbox_style="carto-positron"
         else:
             mapbox_style="carto-positron"
-    else:
-        mapbox_style="carto-positron"
-    p = get_mapbox_plot(df_out, group, zoom=zoom, mapbox_style=mapbox_style, center=center)
-    st.plotly_chart(p, use_container_width=True)
+        p = get_mapbox_plot(df_out, group, zoom=zoom, mapbox_style=mapbox_style, center=center)
+        st.plotly_chart(p, use_container_width=True)

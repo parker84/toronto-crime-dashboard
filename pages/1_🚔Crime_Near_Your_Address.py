@@ -39,6 +39,7 @@ options = get_options(todays_date=todays_date, df=df)
 # ---------------dashboard parameters / filters
 with st.sidebar.expander("⚙️ Advanced Options", expanded=False):
     years, crimes, premises = sidebar_filters(options=options)
+st.sidebar.caption("Want to say thanks? \n[Buy me a coffee ☕](https://www.buymeacoffee.com/brydon)")
 
 df_filtered = df[
     (df['Year'] >= years[0]) &
@@ -90,7 +91,7 @@ if submit_button:
         st.dataframe(df_out)
 
     with st.spinner("Loading the map... 🗺️"):
-        center = dict(lat=df['Latitude'].mean(), lon=df['Longitude'].mean())
+        center = dict(lat=df_out['Latitude'].mean(), lon=df_out['Longitude'].mean())
         p = get_mapbox_plot(df_out, group, zoom=13, mapbox_style="carto-darkmatter", center=center)
         st.plotly_chart(p, use_container_width=True)
 

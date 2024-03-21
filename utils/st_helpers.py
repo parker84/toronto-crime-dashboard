@@ -71,6 +71,9 @@ def load_data(todays_date):
         'longitude': 'Longitude',
     })
     df['Crime Type'] = df['Crime Type'].apply(clean_crime_types)
+    df['Neighbourhood'] = [
+        nbhd.split('(')[0].strip() for nbhd in df['Neighbourhood']
+    ]
     return df
 
 @st.cache_data()
