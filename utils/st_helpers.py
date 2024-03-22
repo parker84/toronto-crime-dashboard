@@ -171,6 +171,7 @@ def plot_crimes_by_group(
                 hover_data=hover_data
             )
         st.plotly_chart(p, use_container_width=True)
+        return category_orders
 
 @st.cache_data()
 def show_metric(
@@ -230,7 +231,7 @@ def get_hood_140_to_nbhd_mapping(df):
     return out_df
 
 @st.cache_data()
-def get_mapbox_plot(df, group, zoom, mapbox_style, center):
+def get_mapbox_plot(df, group, zoom, mapbox_style, center, category_orders=None):
     p = px.scatter_mapbox(
         df, 
         lat="Latitude", 
@@ -252,6 +253,7 @@ def get_mapbox_plot(df, group, zoom, mapbox_style, center):
         height=800,
         width=1200,
         center=center,
+        category_orders=category_orders
     )
     p.update_layout(mapbox_style=mapbox_style)
     return p

@@ -117,7 +117,7 @@ if group != 'Hour':
                 help=f'{group_val} Crimes for `{max_year}` in {neighbourhood}',
             )
 
-plot_crimes_by_group(
+category_orders = plot_crimes_by_group(
     metric_df=df_group, 
     var_to_group_by_col=group,
     metric_col='Crimes',
@@ -142,5 +142,12 @@ if neighbourhood != 'All Neighbourhoods 🦝':
                 mapbox_style="carto-positron"
         else:
             mapbox_style="carto-positron"
-        p = get_mapbox_plot(df_out, group, zoom=zoom, mapbox_style=mapbox_style, center=center)
+        p = get_mapbox_plot(
+            df=df_out, 
+            group=group, 
+            zoom=zoom, 
+            mapbox_style=mapbox_style, 
+            center=center,
+            category_orders=category_orders
+        )
         st.plotly_chart(p, use_container_width=True)

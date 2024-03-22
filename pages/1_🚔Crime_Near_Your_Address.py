@@ -75,7 +75,7 @@ if submit_button:
     with st.spinner(f"📊 Plotting data..."):
         df_group = get_df_group(crimes_near_address_df, group_by=group)
         group_values = df_group.sort_values(by='Crimes', ascending=False)[group].unique().tolist()
-        plot_crimes_by_group(
+        category_orders = plot_crimes_by_group(
             metric_df=df_group, 
             var_to_group_by_col=group, 
             bar_chart=True,
@@ -92,7 +92,14 @@ if submit_button:
 
     with st.spinner("Loading the map... 🗺️"):
         center = dict(lat=df_out['Latitude'].mean(), lon=df_out['Longitude'].mean())
-        p = get_mapbox_plot(df_out, group, zoom=13, mapbox_style="carto-darkmatter", center=center)
+        p = get_mapbox_plot(
+            df=df_out, 
+            group=group, 
+            zoom=13, 
+            mapbox_style="carto-darkmatter", 
+            center=center,
+            category_orders=category_orders
+        )
         st.plotly_chart(p, use_container_width=True)
 
         
