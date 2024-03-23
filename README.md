@@ -1,8 +1,18 @@
 # toronto-crime-dashboard
 Explore Crime in Toronto by Neighbourhood.
 
+The App: https://torcrime.streamlit.app/
 
-## Running the app
+With the Toronto Crime Dashboard you'll be able to see:
+
+* **🦝 Crime in Your Neighbourhood:** enter any neighbourhood in Toronto and see the Crime stats + breakdowns with interactive plots and trends over time.
+* **🚔 Crime Near your Address:** view all the crimes that occurred within a 10 minute walk of your address.
+* 📊 **Compare Neighbourhood Crime Rates:** see the best / worst neighbourhoods for Crime and see how yours ranks.
+
+![image](https://github.com/parker84/toronto-crime-dashboard/assets/12496987/a1d33764-26a9-4a55-b465-0426a5bd9b1f)
+
+
+## Running the app locally
 ```sh
 virtualenv venv -p python3.11
 source venv/bin/activate
