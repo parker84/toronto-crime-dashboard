@@ -207,9 +207,12 @@ def show_metric(
         )
 
 def sidebar_filters(options):
+    default_max_year = int(pd.Timestamp.now().year)-1 # previous year by default
     years = st.slider(
-        'Year', min_value=2014, max_value=options['max_year'],
-        value=(options['max_year']-5, options['max_year'])
+        'Year', 
+        min_value=2014, 
+        max_value=options['max_year'],
+        value=(options['max_year']-5, default_max_year)
     )
     crimes = st.multiselect(
         'Crimes',
