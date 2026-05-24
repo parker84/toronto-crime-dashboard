@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-from utils.data_cleaner import clean_data
+import requests
 from utils.data_scraper import scrape_data
 import coloredlogs, logging
 import json
@@ -11,36 +11,39 @@ logger = logging.getLogger('crime_in_your_neighbourhood')
 coloredlogs.install(level=config('LOG_LEVEL', 'INFO'), logger=logger)
 
 # --------------constants
-RAW_DATA_PATH = 'data/crime_data.csv'
-CLEAN_DATA_PATH = 'data/cleaned_crime_data.csv'
+CLEAN_DATA_PATH = 'data/cleaned_crime_data.parquet'
+RELEASE_ARTIFACT_URL = (
+    "https://github.com/parker84/toronto-crime-dashboard/releases/latest/download/"
+    "cleaned_crime_data.parquet"
+)
+
+
+def _download_release_artifact(write_path: str) -> bool:
+    logger.info(f"Trying GitHub Releases artifact at {RELEASE_ARTIFACT_URL}...")
+    try:
+        r = requests.get(RELEASE_ARTIFACT_URL, stream=True, timeout=30)
+        r.raise_for_status()
+        with open(write_path, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1 << 20):
+                if chunk:
+                    f.write(chunk)
+        logger.info(f"Downloaded Releases artifact to {write_path} ✅")
+        return True
+    except Exception as err:
+        logger.warning(f"Couldn't fetch Releases artifact: {err}")
+        return False
 
 
 def load_or_scrape_data() -> pd.DataFrame:
-    """Loads the data if it exists, otherwise scrapes and cleans the data and then returns it.
+    """Lazy three-tier load: local parquet → GitHub Releases → live scrape."""
+    if not os.path.exists(CLEAN_DATA_PATH):
+        logger.info('Local parquet missing. Trying Releases fallback...')
+        if not _download_release_artifact(CLEAN_DATA_PATH):
+            logger.info('Releases fallback failed. Running live scrape...')
+            scrape_data(write_path=CLEAN_DATA_PATH)
+    logger.info(f"Loading parquet from {CLEAN_DATA_PATH}... 📁")
+    return pd.read_parquet(CLEAN_DATA_PATH)
 
-    Returns:
-        pd.DataFrame: clean data
-    """
-    logger.info('Checking if cleaned data exists...')
-    if os.path.exists(CLEAN_DATA_PATH):
-        logger.info('Clean data exists.')
-        logger.info(f"Loading the data... 📁")
-        clean_df = pd.read_csv(CLEAN_DATA_PATH)
-        logger.info(f"Data loaded. ✅ \n{clean_df}")
-    else:
-        logger.info('Cleaned data does not exist...')
-        if not os.path.exists(RAW_DATA_PATH):
-            logger.info('Raw data does not exist...')
-            scrape_data(write_path=RAW_DATA_PATH)
-        raw_df = pd.read_csv(RAW_DATA_PATH)
-        clean_df = clean_data(in_df=raw_df, save_path=CLEAN_DATA_PATH)
-    return clean_df
-
-def check_if_data_is_up_to_date(df) -> bool:
-    return True # TODO: implement this
-
-def update_data(df) -> pd.DataFrame:
-    pass # TODO: implement this
 
 def clean_crime_types(crime_type):
     if crime_type == 'Theft Over':
@@ -51,11 +54,7 @@ def clean_crime_types(crime_type):
 @st.cache_data()
 def load_data(todays_date):
     # todays_date - is here so that we can trigger the cache to refresh when the date changes
-    df = load_or_scrape_data()
-    data_is_up_to_date = check_if_data_is_up_to_date(df)
-    if not data_is_up_to_date:
-        df = update_data(df)
-    df = pd.read_csv(CLEAN_DATA_PATH).rename(columns={
+    df = load_or_scrape_data().rename(columns={
         'mci_category': 'Crime Type',
         'offence': 'Offence',
         'occurrence_year': 'Year',
@@ -86,9 +85,9 @@ def load_counties():
 def load_neighbourhood_profiles():
     neighbourhood_profiles = pd.read_csv('./data/neighbourhood-profiles-2016-140-model.csv')
     nbhd_df = pd.DataFrame([])
-    nbhd_df['ID'] = neighbourhood_profiles[
+    nbhd_df['ID'] = pd.Series(neighbourhood_profiles[
         neighbourhood_profiles['Characteristic'] == 'Neighbourhood Number'
-    ].iloc[0].values[6:]
+    ].iloc[0].values[6:]).pipe(pd.to_numeric, errors='coerce').astype('Int64')
     nbhd_df['Neighbourhood'] = neighbourhood_profiles.columns[6:]
     nbhd_df['Population'] = neighbourhood_profiles[
         neighbourhood_profiles['Characteristic'] == 'Population, 2016'
