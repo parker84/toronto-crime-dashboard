@@ -236,7 +236,8 @@ def page_footer():
     """Muted byline rendered at the bottom of each page."""
     st.divider()
     st.caption(
-        "Built by [Brydon Parker](https://www.linkedin.com/in/brydon-parker/)"
+        "Built by [Brydon Parker](https://www.linkedin.com/in/brydon-parker/) · "
+        "[Contact Me](mailto:parkerbrydon@gmail.com)"
     )
 
 @st.cache_data()

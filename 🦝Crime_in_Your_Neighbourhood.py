@@ -54,7 +54,8 @@ with col1:
         'Choose a Neighbourhood',
         ['All Neighbourhoods 🦝'] + df['Neighbourhood'].sort_values().unique().tolist(),
         index=0,  # default to city-wide view so the landing page isn't blank
-        placeholder='start typing...'
+        placeholder='start typing...',
+        help="Don't know your neighbourhood? [Look it up here](https://www.toronto.ca/city-government/data-research-maps/neighbourhoods-communities/neighbourhood-profiles/find-your-neighbourhood/#location=&lat=&lng=&zoom=)"
     )
 with col2:
     group = st.selectbox(
@@ -62,9 +63,6 @@ with col2:
         ['Crime Type', 'Premises Type', 'Offence', 'Location Type', 'Hour', 'Day of Week', 'Month'],
         index=0,
     )
-
-if neighbourhood is None:
-    st.caption("If you don't know your neighbourhood, you can look it up here: [Find Your Neighbourhood](https://www.toronto.ca/city-government/data-research-maps/neighbourhoods-communities/neighbourhood-profiles/find-your-neighbourhood/#location=&lat=&lng=&zoom=)")
 
 with st.sidebar.expander("⚙️ Advanced Options", expanded=False):
     years, crimes, premises = sidebar_filters(options=options)
