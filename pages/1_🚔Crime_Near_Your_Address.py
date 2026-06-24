@@ -8,6 +8,8 @@ from utils.st_helpers import (
     get_df_group, 
     plot_crimes_by_group, 
     sidebar_filters,
+    sidebar_promo,
+    page_footer,
     get_mapbox_plot
 )
 from utils.crime_finder import find_crimes_near_address
@@ -39,7 +41,7 @@ options = get_options(todays_date=todays_date, df=df)
 # ---------------dashboard parameters / filters
 with st.sidebar.expander("⚙️ Advanced Options", expanded=False):
     years, crimes, premises = sidebar_filters(options=options)
-st.sidebar.caption("Want to say thanks? \n[Buy me a coffee ☕](https://www.buymeacoffee.com/brydon)")
+sidebar_promo()
 
 df_filtered = df[
     (df['Year'] >= years[0]) &
@@ -102,5 +104,5 @@ if submit_button:
         )
         st.plotly_chart(p, use_container_width=True)
 
-        
+page_footer()
 
