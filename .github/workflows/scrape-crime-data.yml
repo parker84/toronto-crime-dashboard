@@ -32,3 +32,9 @@ jobs:
             data/cleaned_crime_data.parquet \
             --title "Crime data $(date -u +%Y-%m-%d)" \
             --notes "Auto-generated daily snapshot of Toronto MCI data."
+
+      # Keep the cron alive: GitHub disables scheduled workflows after 60 days
+      # of no commits. This pushes a tiny dummy commit only when nearing that
+      # threshold, so the daily scrape never gets auto-disabled.
+      - name: Keepalive
+        uses: gautamkrishnar/keepalive-workflow@v2
