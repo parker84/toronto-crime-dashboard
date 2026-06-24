@@ -7,6 +7,8 @@ from utils.st_helpers import (
     get_options, 
     plot_crimes_by_group,
     sidebar_filters,
+    sidebar_promo,
+    page_footer,
     get_hood_140_to_nbhd_mapping,
     load_counties,
     load_neighbourhood_profiles
@@ -159,9 +161,10 @@ with st.sidebar.expander("⚙️ Advanced Options", expanded=False):
         index=0,
     )
     years, crimes, premises = sidebar_filters(options=options)
-st.sidebar.caption("Want to say thanks? \n[Buy me a coffee ☕](https://www.buymeacoffee.com/brydon)")
+sidebar_promo()
 
 if len(neighbourhoods) == 0:
+    page_footer()
     st.stop()
 
 # --------------filtering and transforming
@@ -201,3 +204,5 @@ plot_crimes_by_group(
     metric_col=primary_metric,
     bar_chart=True,
 )
+
+page_footer()

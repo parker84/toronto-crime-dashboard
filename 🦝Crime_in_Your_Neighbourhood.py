@@ -8,6 +8,8 @@ from utils.st_helpers import (
     show_metric, 
     plot_crimes_by_group, 
     sidebar_filters,
+    sidebar_promo,
+    page_footer,
     get_mapbox_plot
 )
 from PIL import Image
@@ -51,7 +53,7 @@ with col1:
     neighbourhood = st.selectbox(
         'Choose a Neighbourhood',
         ['All Neighbourhoods 🦝'] + df['Neighbourhood'].sort_values().unique().tolist(),
-        index=None,
+        index=0,  # default to city-wide view so the landing page isn't blank
         placeholder='start typing...'
     )
 with col2:
@@ -66,9 +68,10 @@ if neighbourhood is None:
 
 with st.sidebar.expander("⚙️ Advanced Options", expanded=False):
     years, crimes, premises = sidebar_filters(options=options)
-st.sidebar.caption("Want to say thanks? \n[Buy me a coffee ☕](https://www.buymeacoffee.com/brydon)")
+sidebar_promo()
 
 if neighbourhood is None:
+    page_footer()
     st.stop()
 
 # -------------helpers
@@ -151,3 +154,5 @@ if neighbourhood != 'All Neighbourhoods 🦝':
             category_orders=category_orders
         )
         st.plotly_chart(p, use_container_width=True)
+
+page_footer()

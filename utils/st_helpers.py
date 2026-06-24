@@ -225,6 +225,20 @@ def sidebar_filters(options):
     )
     return years, crimes, premises
 
+def sidebar_promo():
+    """Sidebar call-to-action for the real-time alerts product (torcrime.ca)."""
+    st.sidebar.caption(
+        "🔔 Get real-time crime alerts for your neighbourhood → "
+        "[torcrime.ca](https://torcrime.ca/)"
+    )
+
+def page_footer():
+    """Muted byline rendered at the bottom of each page."""
+    st.divider()
+    st.caption(
+        "Built by [Brydon Parker](https://www.linkedin.com/in/brydon-parker/)"
+    )
+
 @st.cache_data()
 def get_hood_140_to_nbhd_mapping(df):
     assert 'ID' in df.columns, 'missing "ID" column'
